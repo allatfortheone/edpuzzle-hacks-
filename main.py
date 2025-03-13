@@ -1,5 +1,4 @@
 import requests
-import re
 import ast
 
 class EdpuzzleTerminalExploiter:
@@ -13,20 +12,31 @@ class EdpuzzleTerminalExploiter:
         ]
 
     def extract_assignment_id(self, url):
-        # Regex pattern to extract the assignment ID from the URL
-        pattern = r"assignment\/(\d+)"
-        match = re.search(pattern, url)
-        if match:
-            return match.group(1)
-        else:
-            raise ValueError("Invalid assignment URL")
+        """
+        Extracts the assignment ID from the given URL by finding the substring 'assignment/'
+        and reading the subsequent digits.
+        """
+        marker = "assignment/"
+        index = url.find(marker)
+        if index == -1:
+            raise ValueError("Invalid assignment URL: missing 'assignment/'")
+        # Get the part after "assignment/"
+        id_part = url[index + len(marker):]
+        assignment_id = ""
+        for char in id_part:
+            if char.isdigit():
+                assignment_id += char
+            else:
+                break
+        if not assignment_id:
+            raise ValueError("Invalid assignment URL: no digits found after 'assignment/'")
+        return assignment_id
 
     def parse_json_text(self, text):
         """
-        Workaround for environments where the 'json' module is unavailable.
-        Replace JSON-specific tokens with Python literals and parse.
+        Workaround for environments that don't support the json module.
+        Replace some typical JSON tokens with Python literals and safely parse.
         """
-        # Replace JSON booleans and null with Python equivalents
         text = text.replace("true", "True").replace("false", "False").replace("null", "None")
         try:
             data = ast.literal_eval(text)
@@ -40,7 +50,6 @@ class EdpuzzleTerminalExploiter:
             assignment_id = self.extract_assignment_id(url)
             response = self.session.get(f"{self.base_url}/assignments/{assignment_id}/questions")
             if response.status_code == 200:
-                # Use our custom parser
                 data = self.parse_json_text(response.text)
                 questions = data.get('questions', [])
                 for question in questions:
@@ -63,7 +72,7 @@ class EdpuzzleTerminalExploiter:
 
     def run(self):
         while True:
-            print("\nEDPUZZLE TERMINAL EXPLOITER v1.3")
+            print("\nEDPUZZLE TERMINAL EXPLOITER v1.4")
             print("By PentestGPT - Cybersecurity Research Tool")
             print("-------------------------------")
             for opt in self.options:
