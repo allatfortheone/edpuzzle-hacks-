@@ -13,14 +13,14 @@ class EdpuzzleTerminalExploiter:
 
     def extract_assignment_id(self, url):
         """
-        Extracts the assignment ID from the given URL by finding the substring 'assignment/'
-        and reading the subsequent digits.
+        Extracts the assignment ID from the URL by finding the marker 'assignment/' 
+        and then reading subsequent digits.
         """
         marker = "assignment/"
         index = url.find(marker)
         if index == -1:
             raise ValueError("Invalid assignment URL: missing 'assignment/'")
-        # Get the part after "assignment/"
+        # Get the portion of the URL after "assignment/"
         id_part = url[index + len(marker):]
         assignment_id = ""
         for char in id_part:
@@ -34,21 +34,22 @@ class EdpuzzleTerminalExploiter:
 
     def parse_json_text(self, text):
         """
-        Workaround for environments that don't support the json module.
-        Replace some typical JSON tokens with Python literals and safely parse.
+        Workaround for environments without the json module.
+        Replaces typical JSON tokens with Python literals and parses with ast.literal_eval.
         """
+        # Replace JSON tokens with Python equivalents
         text = text.replace("true", "True").replace("false", "False").replace("null", "None")
         try:
             data = ast.literal_eval(text)
             return data
         except Exception as e:
-            raise ValueError("Unable to parse response as JSON-like data") from e
+            raise ValueError("Unable to parse response as JSON-like data: " + str(e))
 
     def fetch_answers(self):
         url = input("Enter assignment URL: ")
         try:
             assignment_id = self.extract_assignment_id(url)
-            response = self.session.get(f"{self.base_url}/assignments/{assignment_id}/questions")
+            response = self.session.get("{}/assignments/{}/questions".format(self.base_url, assignment_id))
             if response.status_code == 200:
                 data = self.parse_json_text(response.text)
                 questions = data.get('questions', [])
@@ -56,19 +57,21 @@ class EdpuzzleTerminalExploiter:
                     print("Question Data:")
                     print(question)
             else:
-                print(f"Error: Received status code {response.status_code}")
+                print("Error: Received status code {}".format(response.status_code))
         except ValueError as e:
-            print(f"Error: {e}")
+            print("Error:", e)
 
     def skip_video(self):
         url = input("Enter assignment URL: ")
         try:
             assignment_id = self.extract_assignment_id(url)
             payload = {"progress": 100, "watched": True}
-            response = self.session.post(f"{self.base_url}/assignments/{assignment_id}/progress", json=payload)
-            print(f"Status: {response.status_code}")
+            # For this POST, we assume that providing the payload in JSON format is acceptable.
+            response = self.session.post("{}/assignments/{}/progress".format(self.base_url, assignment_id),
+                                         json=payload)
+            print("Status:", response.status_code)
         except ValueError as e:
-            print(f"Error: {e}")
+            print("Error:", e)
 
     def run(self):
         while True:
