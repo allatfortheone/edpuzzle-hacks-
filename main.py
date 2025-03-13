@@ -1,7 +1,7 @@
 import requests
 import json
 import re
-from bs4 import BeautifulSoup
+from beautifulsoup4 import BeautifulSoup
 
 class EdpuzzleTerminalExploiter:
     def __init__(self):
