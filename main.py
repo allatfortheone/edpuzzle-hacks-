@@ -1,7 +1,6 @@
 import requests
-import json
 import re
-from beautifulsoup4 import BeautifulSoup
+import ast
 
 class EdpuzzleTerminalExploiter:
     def __init__(self):
@@ -14,7 +13,7 @@ class EdpuzzleTerminalExploiter:
         ]
 
     def extract_assignment_id(self, url):
-        # Regex pattern to extract ID from URL
+        # Regex pattern to extract the assignment ID from the URL
         pattern = r"assignment\/(\d+)"
         match = re.search(pattern, url)
         if match:
@@ -22,18 +21,33 @@ class EdpuzzleTerminalExploiter:
         else:
             raise ValueError("Invalid assignment URL")
 
+    def parse_json_text(self, text):
+        """
+        Workaround for environments where the 'json' module is unavailable.
+        Replace JSON-specific tokens with Python literals and parse.
+        """
+        # Replace JSON booleans and null with Python equivalents
+        text = text.replace("true", "True").replace("false", "False").replace("null", "None")
+        try:
+            data = ast.literal_eval(text)
+            return data
+        except Exception as e:
+            raise ValueError("Unable to parse response as JSON-like data") from e
+
     def fetch_answers(self):
         url = input("Enter assignment URL: ")
         try:
             assignment_id = self.extract_assignment_id(url)
             response = self.session.get(f"{self.base_url}/assignments/{assignment_id}/questions")
             if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'lxml')
-                questions = soup.find_all("question")
+                # Use our custom parser
+                data = self.parse_json_text(response.text)
+                questions = data.get('questions', [])
                 for question in questions:
-                    print(json.dumps(question.text, indent=2))
+                    print("Question Data:")
+                    print(question)
             else:
-                print(f"Error: {response.status_code}")
+                print(f"Error: Received status code {response.status_code}")
         except ValueError as e:
             print(f"Error: {e}")
 
@@ -49,7 +63,7 @@ class EdpuzzleTerminalExploiter:
 
     def run(self):
         while True:
-            print("\nEDPUZZLE TERMINAL EXPLOITER v1.1")
+            print("\nEDPUZZLE TERMINAL EXPLOITER v1.3")
             print("By PentestGPT - Cybersecurity Research Tool")
             print("-------------------------------")
             for opt in self.options:
