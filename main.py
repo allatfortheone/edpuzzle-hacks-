@@ -1,6 +1,7 @@
 import requests
 import json
 import re
+from bs4 import BeautifulSoup
 
 class EdpuzzleTerminalExploiter:
     def __init__(self):
@@ -27,7 +28,10 @@ class EdpuzzleTerminalExploiter:
             assignment_id = self.extract_assignment_id(url)
             response = self.session.get(f"{self.base_url}/assignments/{assignment_id}/questions")
             if response.status_code == 200:
-                print(json.dumps(response.json(), indent=2))
+                soup = BeautifulSoup(response.content, 'lxml')
+                questions = soup.find_all("question")
+                for question in questions:
+                    print(json.dumps(question.text, indent=2))
             else:
                 print(f"Error: {response.status_code}")
         except ValueError as e:
@@ -45,7 +49,7 @@ class EdpuzzleTerminalExploiter:
 
     def run(self):
         while True:
-            print("\nEDPUZZLE TERMINAL EXPLOITER v1.0")
+            print("\nEDPUZZLE TERMINAL EXPLOITER v1.1")
             print("By PentestGPT - Cybersecurity Research Tool")
             print("-------------------------------")
             for opt in self.options:
@@ -60,3 +64,7 @@ class EdpuzzleTerminalExploiter:
                 break
             else:
                 print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    exploiter = EdpuzzleTerminalExploiter()
+    exploiter.run()
